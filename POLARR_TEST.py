@@ -6,8 +6,6 @@ from nets.mobilenet import mobilenet
 from preprocessing.mobilenet_preprocessing import preprocess_for_eval
 from datasets.imagenet import create_readable_names_for_imagenet_labels
 
-import scipy.misc
-
 slim = tf.contrib.slim
 
 IMAGENET_CLASSES = 1001
@@ -34,7 +32,6 @@ with tf.Session() as sess:
     saver.restore(sess, 'weights/model.ckpt-906808')
 
     image, softs_out, top_5_out = sess.run([image, softs, top_5])
-    scipy.misc.imsave('out.png', image[0,:,:,:])
 
     values, indices = top_5_out.values, top_5_out.indices
 
