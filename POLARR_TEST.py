@@ -20,7 +20,7 @@ with tf.Session() as sess:
     image = preprocess_for_eval(image, 224, 224)
     image = tf.expand_dims(image, axis=0)
 
-    logits, _ = mobilenet(image, num_classes=IMAGENET_CLASSES)
+    logits, _ = mobilenet(image, num_classes=IMAGENET_CLASSES, is_training=False)
 
     softs = tf.nn.softmax(logits)
     top_5 = tf.nn.top_k(softs, k=5)
@@ -31,7 +31,7 @@ with tf.Session() as sess:
     print('restoring weights')
     saver.restore(sess, 'weights/model.ckpt-906808')
 
-    image, softs_out, top_5_out = sess.run([image, softs, top_5])
+    _, logits_out, top_5_out = sess.run([image, logits, top_5])
 
     values, indices = top_5_out.values, top_5_out.indices
 
@@ -72,18 +72,15 @@ with tf.Session() as sess:
 
     print('\n')
     print('vi')
-
-    print('Don\'t have time to retrain a new final fully connected layer on imagenet examples')
-    print('so next best thing is to compare the logits of these classes and return the labels with highest probabilities')
-
     # indices corresponding to given classes (found by checking labels_to_name)
-    indices = range(718, 728)
-    print([labels_to_names[ind] for ind in indices])
+    indices = list(range(718, 728))
 
-    softs_out = softs_out[0]
-    relevant_logits = softs_out[indices]
+    new_logits = tf.slice(logits, [0,718], [-1, 10])
+    new_softs = tf.nn.softmax(new_logits)
+    new_top_5 = tf.nn.top_k(new_softs, k=5)
 
-    ordered = np.argsort(relevant_logits)[::-1]
+    top_5_out = sess.run(new_top_5)
+    values, indices = top_5_out.values, top_5_out.indices
 
-    for i in range(5):
-        print(labels_to_names[indices[ordered[i]]])
+    for v, i in zip(values[0], indices[0]):
+        print('%s with probability %s' % (labels_to_names[i + 718], v))
